@@ -7,13 +7,16 @@ import { signOut } from "next-auth/react";
 const managerLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/schedules", label: "Schedules" },
+  { href: "/swaps", label: "Swaps" },
   { href: "/staff", label: "Staff" },
   { href: "/stations", label: "Stations" },
 ];
 
 const staffLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/availability", label: "My Availability" },
+  { href: "/my-shifts", label: "My Shifts" },
+  { href: "/my-shifts/open-swaps", label: "Open Swaps" },
+  { href: "/availability", label: "Availability" },
 ];
 
 export function Nav({ role }: { role: string }) {
