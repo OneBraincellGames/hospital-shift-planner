@@ -25,7 +25,7 @@ export async function GET() {
   if (!profile) return NextResponse.json([]);
 
   // Staff: their own requests + open requests they can claim
-  const [myRequests, openRequests] = await Promise.all([
+  const [myRequests] = await Promise.all([
     prisma.swapRequest.findMany({
       where: { requesterId: profile.id },
       orderBy: { createdAt: "desc" },

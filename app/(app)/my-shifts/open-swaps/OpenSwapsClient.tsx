@@ -59,7 +59,7 @@ export function OpenSwapsClient({ swaps }: { swaps: Swap[] }) {
               <p className="text-xs text-gray-500">
                 {swap.shiftSlot.station.name} · {swap.shiftSlot.schedule.name}
                 {" · "}Posted by {swap.requester.user.name}
-                {swap.note && <span className="italic"> — "{swap.note}"</span>}
+                {swap.note && <span className="italic"> — &ldquo;{swap.note}&rdquo;</span>}
               </p>
             </div>
           </div>

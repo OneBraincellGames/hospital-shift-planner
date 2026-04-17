@@ -75,7 +75,7 @@ export function SwapsClient({ swaps }: Props) {
               · {swap.shiftSlot.shiftType} · {swap.shiftSlot.station.name}
               {" · "}{swap.shiftSlot.schedule.name}
             </p>
-            {swap.note && <p className="text-xs text-gray-400 mt-0.5 italic">"{swap.note}"</p>}
+            {swap.note && <p className="text-xs text-gray-400 mt-0.5 italic">&ldquo;{swap.note}&rdquo;</p>}
           </div>
           {isPending && (
             <div className="flex gap-2 shrink-0">
