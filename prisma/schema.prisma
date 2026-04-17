@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MANAGER
+  STAFF
+}
+
+enum ShiftType {
+  EARLY
+  LATE
+  NIGHT
+  DAY
+}
+
+enum DayKind {
+  WEEKDAY
+  WEEKEND
+}
+
+enum LeaveType {
+  SICK
+  VACATION
+  PUBLIC_HOLIDAY
+}
+
+enum SwapStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staffProfile StaffProfile?
+}
+
+model StaffProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stationAssignments StationAssignment[]
+  availabilityRules  AvailabilityRule[]
+  availabilityBlocks AvailabilityBlock[]
+  assignments        ShiftAssignment[]
+  leaveBlocks        LeaveBlock[]
+  swapRequestsFrom   SwapRequest[]       @relation("SwapFrom")
+  swapRequestsTo     SwapRequest[]       @relation("SwapTo")
+}
+
+model Station {
+  id        String   @id @default(cuid())
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staffAssignments StationAssignment[]
+  headcountRules   HeadcountRule[]
+  shiftSlots       ShiftSlot[]
+}
+
+// Which staff are cross-trained for which stations
+model StationAssignment {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  stationId      String
+  station        Station      @relation(fields: [stationId], references: [id])
+  isPrimary      Boolean      @default(false)
+
+  @@unique([staffProfileId, stationId])
+}
+
+// Required headcount per station per shift type
+model HeadcountRule {
+  id        String    @id @default(cuid())
+  stationId String
+  station   Station   @relation(fields: [stationId], references: [id])
+  dayKind   DayKind
+  shiftType ShiftType
+  required  Int
+
+  @@unique([stationId, dayKind, shiftType])
+}
+
+// Recurring availability rule (e.g. "never nights")
+model AvailabilityRule {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  shiftType      ShiftType
+  available      Boolean
+  createdAt      DateTime     @default(now())
+
+  @@unique([staffProfileId, shiftType])
+}
+
+// One-off date override
+model AvailabilityBlock {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  date           DateTime     @db.Date
+  available      Boolean
+  note           String?
+
+  @@unique([staffProfileId, date])
+}
+
+model LeaveBlock {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  startDate      DateTime     @db.Date
+  endDate        DateTime     @db.Date
+  type           LeaveType
+  note           String?
+  createdAt      DateTime     @default(now())
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shiftSlots ShiftSlot[]
+}
+
+model ShiftSlot {
+  id         String    @id @default(cuid())
+  scheduleId String
+  schedule   Schedule  @relation(fields: [scheduleId], references: [id])
+  stationId  String
+  station    Station   @relation(fields: [stationId], references: [id])
+  date       DateTime  @db.Date
+  shiftType  ShiftType
+  createdAt  DateTime  @default(now())
+
+  assignments  ShiftAssignment[]
+  swapRequests SwapRequest[]
+
+  @@unique([scheduleId, stationId, date, shiftType])
+}
+
+model ShiftAssignment {
+  id             String       @id @default(cuid())
+  shiftSlotId    String
+  shiftSlot      ShiftSlot    @relation(fields: [shiftSlotId], references: [id])
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@unique([shiftSlotId, staffProfileId])
+}
+
+model SwapRequest {
+  id             String       @id @default(cuid())
+  shiftSlotId    String
+  shiftSlot      ShiftSlot    @relation(fields: [shiftSlotId], references: [id])
+  requesterId    String
+  requester      StaffProfile @relation("SwapFrom", fields: [requesterId], references: [id])
+  targetId       String?
+  target         StaffProfile? @relation("SwapTo", fields: [targetId], references: [id])
+  status         SwapStatus   @default(PENDING)
+  note           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
