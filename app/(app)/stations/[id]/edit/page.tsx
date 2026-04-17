@@ -22,7 +22,7 @@ export default async function EditStationPage({ params }: { params: Promise<{ id
           id: station.id,
           name: station.name,
           headcountRules: station.headcountRules.map((r) => ({
-            dayKind: r.dayKind,
+            dayOfWeek: r.dayOfWeek,
             shiftType: r.shiftType,
             required: r.required,
           })),

@@ -1,4 +1,4 @@
-import { DayKind, ShiftType } from "@prisma/client";
+import { DayOfWeek, ShiftType } from "@prisma/client";
 
 // Shift windows in hours-of-day. NIGHT ends at 30 = 06:00 next day.
 const SHIFT_WINDOW: Record<ShiftType, { start: number; end: number }> = {
@@ -13,6 +13,16 @@ const WEEKEND_SHIFTS: ShiftType[] = [ShiftType.DAY, ShiftType.NIGHT];
 const MIN_REST_HOURS = 11;
 const MAX_CONSECUTIVE_DAYS = 6;
 
+const DOW_MAP: Record<number, DayOfWeek> = {
+  0: DayOfWeek.SUN,
+  1: DayOfWeek.MON,
+  2: DayOfWeek.TUE,
+  3: DayOfWeek.WED,
+  4: DayOfWeek.THU,
+  5: DayOfWeek.FRI,
+  6: DayOfWeek.SAT,
+};
+
 export type StaffMember = {
   id: string; // staffProfileId
   userId: string;
@@ -24,7 +34,7 @@ export type StaffMember = {
 
 export type HeadcountRule = {
   stationId: string;
-  dayKind: DayKind;
+  dayOfWeek: DayOfWeek;
   shiftType: ShiftType;
   required: number;
 };
@@ -53,12 +63,6 @@ export type ScheduleResult = {
 
 function dateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
-}
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setUTCDate(r.getUTCDate() + n);
-  return r;
 }
 
 function isWeekend(d: Date): boolean {
@@ -138,7 +142,7 @@ export function generateSchedule(
   while (current <= endDate) {
     const dateStr = dateKey(current);
     const weekend = isWeekend(current);
-    const dayKind: DayKind = weekend ? DayKind.WEEKEND : DayKind.WEEKDAY;
+    const dayOfWeek = DOW_MAP[current.getUTCDay()];
     const shifts = weekend ? WEEKEND_SHIFTS : WEEKDAY_SHIFTS;
 
     for (const shiftType of shifts) {
@@ -146,7 +150,7 @@ export function generateSchedule(
         const rule = headcountRules.find(
           (r) =>
             r.stationId === station.id &&
-            r.dayKind === dayKind &&
+            r.dayOfWeek === dayOfWeek &&
             r.shiftType === shiftType
         );
         const required = rule?.required ?? 0;
@@ -196,7 +200,6 @@ export function generateSchedule(
 
     current.setUTCDate(current.getUTCDate() + 1);
     dayIndex++;
-    void addDays; // suppress unused warning
   }
 
   return { assignments, conflicts, hoursPerStaff };

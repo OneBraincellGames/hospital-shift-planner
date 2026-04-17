@@ -18,12 +18,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         });
-        if (!user) return null;
+        if (!user || !user.password) return null;
         const valid = await bcrypt.compare(
           credentials.password as string,
           user.password
         );
         if (!valid) return null;
+        if (user.role !== "MANAGER") return null;
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

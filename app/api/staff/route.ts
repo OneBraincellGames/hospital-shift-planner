@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 
 export async function GET() {
   const session = await auth();
@@ -23,27 +22,20 @@ export async function POST(req: Request) {
   const session = await auth();
   if (session?.user.role !== "MANAGER") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await req.json();
-  const { name, email, password, stationIds } = body;
-
-  if (!name || !email || !password) {
-    return NextResponse.json({ error: "name, email and password are required" }, { status: 400 });
-  }
-
-  const hashed = await bcrypt.hash(password, 10);
+  const { name, monthlyHours, stationIds, primaryStationId } = await req.json();
+  if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
 
   const user = await prisma.user.create({
     data: {
       name,
-      email,
-      password: hashed,
       role: "STAFF",
       staffProfile: {
         create: {
+          monthlyHours: monthlyHours ?? 160,
           stationAssignments: {
-            create: (stationIds ?? []).map((id: string, i: number) => ({
+            create: (stationIds ?? []).map((id: string) => ({
               stationId: id,
-              isPrimary: i === 0,
+              isPrimary: id === primaryStationId,
             })),
           },
         },

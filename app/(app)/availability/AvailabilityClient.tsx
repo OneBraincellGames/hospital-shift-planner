@@ -129,7 +129,7 @@ export function AvailabilityClient({ rules, blocks }: Props) {
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               required
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -137,7 +137,7 @@ export function AvailabilityClient({ rules, blocks }: Props) {
             <select
               value={newAvailable ? "available" : "unavailable"}
               onChange={(e) => setNewAvailable(e.target.value === "available")}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="unavailable">Unavailable</option>
               <option value="available">Available</option>
@@ -149,7 +149,7 @@ export function AvailabilityClient({ rules, blocks }: Props) {
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder="e.g. doctor appointment"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button

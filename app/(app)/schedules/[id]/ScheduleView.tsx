@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ScheduleGrid } from "./ScheduleGrid";
 import { StationView } from "./StationView";
 import type { Conflict } from "@/lib/scheduler";
+import { useT } from "@/lib/i18n/client";
 
 type StaffProfile = {
   id: string;
@@ -48,6 +49,7 @@ type GenerateResult = { conflicts: Conflict[]; hoursPerStaff: Record<string, num
 
 export function ScheduleView({ schedule, allStaff, stations }: Props) {
   const router = useRouter();
+  const t = useT();
   const [view, setView] = useState<"grid" | "station">("grid");
   const [isPending, startTransition] = useTransition();
   const [generating, setGenerating] = useState(false);
@@ -88,13 +90,10 @@ export function ScheduleView({ schedule, allStaff, stations }: Props) {
   const weeks = totalDays / 7;
   const capTotal = WEEKLY_CAP * weeks;
 
-  const overtimeStaff = allStaff.filter(
-    (s) => (staffHours[s.id] ?? 0) > capTotal
-  );
+  const overtimeStaff = allStaff.filter((s) => (staffHours[s.id] ?? 0) > capTotal);
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{schedule.name}</h1>
@@ -109,7 +108,7 @@ export function ScheduleView({ schedule, allStaff, stations }: Props) {
             disabled={generating || isPending}
             className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {generating ? "Generating…" : "Auto-generate"}
+            {generating ? t.schedules.generating : t.schedules.generate}
           </button>
           <button
             onClick={togglePublish}
@@ -120,19 +119,18 @@ export function ScheduleView({ schedule, allStaff, stations }: Props) {
                 : "border-green-500 text-green-700 hover:bg-green-50"
             }`}
           >
-            {schedule.published ? "Unpublish" : "Publish"}
+            {schedule.published ? t.schedules.unpublish : t.schedules.publish}
           </button>
         </div>
       </div>
 
-      {/* Generate result */}
       {generateResult && (
         <div className="mb-4 p-4 rounded-xl border bg-white">
           <p className="text-sm font-medium text-gray-900 mb-2">
-            Generated {generateResult.slotsCreated} slots
+            {generateResult.slotsCreated} {t.schedules.slotsCreatedLabel}
             {generateResult.conflicts.length > 0 && (
               <span className="ml-2 text-amber-600">
-                — {generateResult.conflicts.length} conflict{generateResult.conflicts.length !== 1 ? "s" : ""}
+                — {generateResult.conflicts.length} {t.schedules.conflictsLabel}
               </span>
             )}
           </p>
@@ -140,8 +138,7 @@ export function ScheduleView({ schedule, allStaff, stations }: Props) {
             <ul className="space-y-1">
               {generateResult.conflicts.map((c, i) => (
                 <li key={i} className="text-xs text-amber-700">
-                  {c.date} · {c.stationName} · {c.shiftType}: need {c.required}, assigned{" "}
-                  {c.assigned}
+                  {c.date} · {c.stationName} · {c.shiftType}: {c.required} / {c.assigned}
                 </li>
               ))}
             </ul>
@@ -149,49 +146,37 @@ export function ScheduleView({ schedule, allStaff, stations }: Props) {
         </div>
       )}
 
-      {/* Overtime warnings */}
       {overtimeStaff.length > 0 && (
         <div className="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50">
-          <p className="text-sm font-medium text-amber-800 mb-1">Hour cap warnings</p>
+          <p className="text-sm font-medium text-amber-800 mb-1">{t.schedules.staffHoursTitle}</p>
           <ul className="space-y-0.5">
             {overtimeStaff.map((s) => (
               <li key={s.id} className="text-xs text-amber-700">
-                {s.user.name}: {staffHours[s.id]}h scheduled (cap {Math.round(capTotal)}h)
+                {s.user.name}: {staffHours[s.id]}h (cap {Math.round(capTotal)}h)
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* View toggle */}
       <div className="flex gap-2 mb-4">
         {(["grid", "station"] as const).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
             className={`text-sm px-3 py-1.5 rounded-lg border ${
-              view === v
-                ? "bg-blue-600 text-white border-blue-600"
-                : "border-gray-300 text-gray-600 hover:bg-gray-50"
+              view === v ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 text-gray-600 hover:bg-gray-50"
             }`}
           >
-            {v === "grid" ? "Calendar grid" : "Station view"}
+            {v === "grid" ? t.schedules.gridView : t.schedules.stationView}
           </button>
         ))}
       </div>
 
       {view === "grid" ? (
-        <ScheduleGrid
-          schedule={schedule}
-          allStaff={allStaff}
-          staffHours={staffHours}
-        />
+        <ScheduleGrid schedule={schedule} allStaff={allStaff} staffHours={staffHours} />
       ) : (
-        <StationView
-          schedule={schedule}
-          stations={stations}
-          allStaff={allStaff}
-        />
+        <StationView schedule={schedule} stations={stations} allStaff={allStaff} />
       )}
     </div>
   );

@@ -19,15 +19,20 @@ enum ShiftType {
   DAY
 }
 
-enum DayKind {
-  WEEKDAY
-  WEEKEND
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
 }
 
 enum LeaveType {
-  SICK
   VACATION
-  PUBLIC_HOLIDAY
+  TRAINING
+  ABSENCE
 }
 
 enum SwapStatus {
@@ -38,9 +43,9 @@ enum SwapStatus {
 
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  email         String?   @unique
   name          String
-  password      String
+  password      String?
   role          Role      @default(STAFF)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -85,12 +90,13 @@ model VerificationToken {
 }
 
 model StaffProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  active       Boolean  @default(true)
+  monthlyHours Int      @default(160)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   stationAssignments StationAssignment[]
   availabilityRules  AvailabilityRule[]
@@ -130,11 +136,11 @@ model HeadcountRule {
   id        String    @id @default(cuid())
   stationId String
   station   Station   @relation(fields: [stationId], references: [id])
-  dayKind   DayKind
+  dayOfWeek DayOfWeek
   shiftType ShiftType
   required  Int
 
-  @@unique([stationId, dayKind, shiftType])
+  @@unique([stationId, dayOfWeek, shiftType])
 }
 
 // Recurring availability rule (e.g. "never nights")

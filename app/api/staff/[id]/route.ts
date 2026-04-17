@@ -8,15 +8,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const body = await req.json();
-  const { name, email, active, stationIds } = body;
+  const { name, email, active, monthlyHours, stationIds, primaryStationId } = body;
 
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...(name && { name }),
       ...(email && { email }),
-      ...(typeof active === "boolean" && {
-        staffProfile: { update: { active } },
+      ...((typeof active === "boolean" || typeof monthlyHours === "number") && {
+        staffProfile: {
+          update: {
+            ...(typeof active === "boolean" && { active }),
+            ...(typeof monthlyHours === "number" && { monthlyHours }),
+          },
+        },
       }),
     },
   });
@@ -26,10 +31,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (profile) {
       await prisma.stationAssignment.deleteMany({ where: { staffProfileId: profile.id } });
       await prisma.stationAssignment.createMany({
-        data: (stationIds as string[]).map((sid, i) => ({
+        data: (stationIds as string[]).map((sid) => ({
           staffProfileId: profile.id,
           stationId: sid,
-          isPrimary: i === 0,
+          isPrimary: sid === primaryStationId,
         })),
       });
     }

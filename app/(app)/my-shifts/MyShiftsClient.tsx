@@ -129,7 +129,7 @@ export function MyShiftsClient({ assignments, colleagues }: Props) {
                 <select
                   value={targetId}
                   onChange={(e) => setTargetId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900"
                 >
                   <option value="">Select colleague…</option>
                   {colleagues.map((c) => (
@@ -144,7 +144,7 @@ export function MyShiftsClient({ assignments, colleagues }: Props) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. family event"
-                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900"
               />
             </div>
             {error && <p className="text-xs text-red-600 mb-3">{error}</p>}

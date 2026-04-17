@@ -29,8 +29,9 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
         defaultValues={{
           id: user.id,
           name: user.name,
-          email: user.email,
           stationIds: user.staffProfile?.stationAssignments.map((a) => a.stationId) ?? [],
+          primaryStationId: user.staffProfile?.stationAssignments.find((a) => a.isPrimary)?.stationId ?? null,
+          monthlyHours: user.staffProfile?.monthlyHours ?? 160,
         }}
       />
     </div>

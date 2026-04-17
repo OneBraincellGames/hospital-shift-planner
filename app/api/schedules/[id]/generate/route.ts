@@ -81,7 +81,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const rules: HeadcountRule[] = headcountRules.map((r) => ({
     stationId: r.stationId,
-    dayKind: r.dayKind,
+    dayOfWeek: r.dayOfWeek,
     shiftType: r.shiftType as ShiftType,
     required: r.required,
   }));

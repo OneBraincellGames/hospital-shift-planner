@@ -20,9 +20,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (headcountRules !== undefined) {
     await prisma.headcountRule.deleteMany({ where: { stationId: id } });
     await prisma.headcountRule.createMany({
-      data: headcountRules.map((r: { dayKind: string; shiftType: string; required: number }) => ({
+      data: headcountRules.map((r: { dayOfWeek: string; shiftType: string; required: number }) => ({
         stationId: id,
-        dayKind: r.dayKind,
+        dayOfWeek: r.dayOfWeek,
         shiftType: r.shiftType,
         required: r.required,
       })),

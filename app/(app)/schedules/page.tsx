@@ -2,9 +2,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getT } from "@/lib/i18n/server";
 
 export default async function SchedulesPage() {
-  const session = await auth();
+  const [session, t] = await Promise.all([auth(), getT()]);
   if (session?.user.role !== "MANAGER") redirect("/dashboard");
 
   const schedules = await prisma.schedule.findMany({
@@ -15,12 +16,9 @@ export default async function SchedulesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Schedules</h1>
-        <Link
-          href="/schedules/new"
-          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          New schedule
+        <h1 className="text-xl font-semibold text-gray-900">{t.schedules.title}</h1>
+        <Link href="/schedules/new" className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700">
+          {t.schedules.new}
         </Link>
       </div>
 
@@ -28,10 +26,10 @@ export default async function SchedulesPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Period</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Slots</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t.common.name}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t.schedules.period}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t.schedules.slots}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{t.common.status}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -40,33 +38,26 @@ export default async function SchedulesPage() {
               <tr key={s.id}>
                 <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
                 <td className="px-4 py-3 text-gray-600">
-                  {new Date(s.startDate).toLocaleDateString()} –{" "}
-                  {new Date(s.endDate).toLocaleDateString()}
+                  {new Date(s.startDate).toLocaleDateString()} – {new Date(s.endDate).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3 text-gray-600">{s._count.shiftSlots}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                      s.published
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {s.published ? "Published" : "Draft"}
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                    s.published ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {s.published ? t.schedules.published : t.schedules.draft}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/schedules/${s.id}`} className="text-blue-600 hover:underline">
-                    Open
+                    {t.schedules.open}
                   </Link>
                 </td>
               </tr>
             ))}
             {schedules.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                  No schedules yet.
-                </td>
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t.schedules.noSchedulesYet}</td>
               </tr>
             )}
           </tbody>

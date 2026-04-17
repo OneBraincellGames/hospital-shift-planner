@@ -1,16 +1,15 @@
 import { auth } from "@/auth";
+import { getT } from "@/lib/i18n/server";
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const [session, t] = await Promise.all([auth(), getT()]);
   return (
     <div>
       <h1 className="text-xl font-semibold text-gray-900 mb-1">
-        Welcome, {session?.user.name}
+        {t.dashboard.welcome}, {session?.user.name}
       </h1>
       <p className="text-sm text-gray-500">
-        {session?.user.role === "MANAGER"
-          ? "Manage staff, stations, and schedules from the navigation above."
-          : "View your schedule and manage your availability from the navigation above."}
+        {session?.user.role === "MANAGER" ? t.dashboard.managerSubtitle : t.dashboard.staffSubtitle}
       </p>
     </div>
   );
