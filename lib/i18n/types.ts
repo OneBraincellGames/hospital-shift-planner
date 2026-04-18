@@ -7,6 +7,7 @@ export type Translations = {
     leave: string;
     staff: string;
     stations: string;
+    plannerConfig: string;
     myShifts: string;
     openSwaps: string;
     availability: string;
@@ -107,6 +108,24 @@ export type Translations = {
     slotsCreatedLabel: string;
     noConflicts: string;
     staffHoursTitle: string;
+  };
+  plannerConfig: {
+    title: string;
+    subtitle: string;
+    saved: string;
+    constraintsTitle: string;
+    minRestHours: string;
+    minRestHoursHint: string;
+    maxConsecutiveDays: string;
+    maxConsecutiveDaysHint: string;
+    shiftTimesTitle: string;
+    shiftTimesHint: string;
+    startLabel: string;
+    endLabel: string;
+    durationLabel: string;
+    crossesMidnight: string;
+    hours: string;
+    days: string;
   };
   swaps: {
     title: string;

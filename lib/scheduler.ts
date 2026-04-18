@@ -1,17 +1,33 @@
 import { DayOfWeek, ShiftType } from "@prisma/client";
 
-// Shift windows in hours-of-day. NIGHT ends at 30 = 06:00 next day.
-const SHIFT_WINDOW: Record<ShiftType, { start: number; end: number }> = {
-  EARLY: { start: 6, end: 14 },
-  LATE: { start: 14, end: 22 },
-  NIGHT: { start: 22, end: 30 },
-  DAY: { start: 8, end: 20 },
+export type PlannerConfigValues = {
+  minRestHours: number;
+  maxConsecutiveDays: number;
+  earlyShiftStart: number;
+  earlyShiftEnd: number;
+  lateShiftStart: number;
+  lateShiftEnd: number;
+  nightShiftStart: number;
+  nightShiftEnd: number;
+  dayShiftStart: number;
+  dayShiftEnd: number;
+};
+
+export const DEFAULT_PLANNER_CONFIG: PlannerConfigValues = {
+  minRestHours: 11,
+  maxConsecutiveDays: 6,
+  earlyShiftStart: 6,
+  earlyShiftEnd: 14,
+  lateShiftStart: 14,
+  lateShiftEnd: 22,
+  nightShiftStart: 22,
+  nightShiftEnd: 6,
+  dayShiftStart: 8,
+  dayShiftEnd: 20,
 };
 
 const WEEKDAY_SHIFTS: ShiftType[] = [ShiftType.EARLY, ShiftType.LATE, ShiftType.NIGHT];
 const WEEKEND_SHIFTS: ShiftType[] = [ShiftType.DAY, ShiftType.NIGHT];
-const MIN_REST_HOURS = 11;
-const MAX_CONSECUTIVE_DAYS = 6;
 
 const DOW_MAP: Record<number, DayOfWeek> = {
   0: DayOfWeek.SUN,
@@ -70,32 +86,66 @@ function isWeekend(d: Date): boolean {
   return dow === 0 || dow === 6;
 }
 
-/** Returns the absolute end time as (dayIndex * 24 + hour). dayIndex 0 = startDate. */
-function shiftEndAbsolute(dayIndex: number, shiftType: ShiftType): number {
-  return dayIndex * 24 + SHIFT_WINDOW[shiftType].end;
+/**
+ * Resolves end hour to absolute hours on the timeline.
+ * If end < start, the shift crosses midnight → add 24.
+ */
+function resolveWindow(start: number, end: number): { start: number; end: number } {
+  return { start, end: end < start ? end + 24 : end };
 }
 
-function shiftStartAbsolute(dayIndex: number, shiftType: ShiftType): number {
-  return dayIndex * 24 + SHIFT_WINDOW[shiftType].start;
+function getShiftWindow(
+  shiftType: ShiftType,
+  cfg: PlannerConfigValues
+): { start: number; end: number } {
+  switch (shiftType) {
+    case ShiftType.EARLY:
+      return resolveWindow(cfg.earlyShiftStart, cfg.earlyShiftEnd);
+    case ShiftType.LATE:
+      return resolveWindow(cfg.lateShiftStart, cfg.lateShiftEnd);
+    case ShiftType.NIGHT:
+      return resolveWindow(cfg.nightShiftStart, cfg.nightShiftEnd);
+    case ShiftType.DAY:
+      return resolveWindow(cfg.dayShiftStart, cfg.dayShiftEnd);
+  }
+}
+
+/** Returns the absolute end time as (dayIndex * 24 + resolvedEndHour). */
+function shiftEndAbsolute(
+  dayIndex: number,
+  shiftType: ShiftType,
+  cfg: PlannerConfigValues
+): number {
+  return dayIndex * 24 + getShiftWindow(shiftType, cfg).end;
+}
+
+function shiftStartAbsolute(
+  dayIndex: number,
+  shiftType: ShiftType,
+  cfg: PlannerConfigValues
+): number {
+  return dayIndex * 24 + getShiftWindow(shiftType, cfg).start;
 }
 
 function hasRestViolation(
   staffId: string,
   dayIndex: number,
   shiftType: ShiftType,
-  lastShift: Map<string, { dayIndex: number; shiftType: ShiftType }>
+  lastShift: Map<string, { dayIndex: number; shiftType: ShiftType }>,
+  cfg: PlannerConfigValues
 ): boolean {
   const last = lastShift.get(staffId);
   if (!last) return false;
-  const lastEnd = shiftEndAbsolute(last.dayIndex, last.shiftType);
-  const nextStart = shiftStartAbsolute(dayIndex, shiftType);
-  return nextStart - lastEnd < MIN_REST_HOURS;
+  const lastEnd = shiftEndAbsolute(last.dayIndex, last.shiftType, cfg);
+  const nextStart = shiftStartAbsolute(dayIndex, shiftType, cfg);
+  return nextStart - lastEnd < cfg.minRestHours;
 }
 
 function hasConsecutiveViolation(
   staffId: string,
   dayIndex: number,
-  workedDays: Map<string, number[]>
+  workedDays: Map<string, number[]>,
+  cfg: PlannerConfigValues
 ): boolean {
   const days = workedDays.get(staffId) ?? [];
   let streak = 0;
@@ -103,7 +153,7 @@ function hasConsecutiveViolation(
     if (days.includes(i)) streak++;
     else break;
   }
-  return streak >= MAX_CONSECUTIVE_DAYS;
+  return streak >= cfg.maxConsecutiveDays;
 }
 
 function isStaffAvailable(
@@ -121,7 +171,8 @@ export function generateSchedule(
   endDate: Date,
   staffList: StaffMember[],
   headcountRules: HeadcountRule[],
-  stations: { id: string; name: string }[]
+  stations: { id: string; name: string }[],
+  config: PlannerConfigValues = DEFAULT_PLANNER_CONFIG
 ): ScheduleResult {
   const assignments: SlotAssignment[] = [];
   const conflicts: Conflict[] = [];
@@ -161,14 +212,14 @@ export function generateSchedule(
             (s) =>
               s.stationIds.includes(station.id) &&
               isStaffAvailable(s, dateStr, shiftType) &&
-              !hasRestViolation(s.id, dayIndex, shiftType, lastShift) &&
-              !hasConsecutiveViolation(s.id, dayIndex, workedDays)
+              !hasRestViolation(s.id, dayIndex, shiftType, lastShift, config) &&
+              !hasConsecutiveViolation(s.id, dayIndex, workedDays, config)
           )
           .sort((a, b) => (hoursPerStaff[a.id] ?? 0) - (hoursPerStaff[b.id] ?? 0));
 
         const chosen = eligible.slice(0, required);
-        const shiftDuration =
-          SHIFT_WINDOW[shiftType].end - SHIFT_WINDOW[shiftType].start;
+        const window = getShiftWindow(shiftType, config);
+        const shiftDuration = window.end - window.start;
 
         for (const s of chosen) {
           hoursPerStaff[s.id] = (hoursPerStaff[s.id] ?? 0) + shiftDuration;

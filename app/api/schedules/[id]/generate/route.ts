@@ -5,6 +5,7 @@ import {
   generateSchedule,
   StaffMember,
   HeadcountRule,
+  DEFAULT_PLANNER_CONFIG,
 } from "@/lib/scheduler";
 import { ShiftType } from "@prisma/client";
 
@@ -18,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   if (!schedule) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Load all data needed for the algorithm
-  const [staffProfiles, stations, headcountRules] = await Promise.all([
+  const [staffProfiles, stations, headcountRules, plannerConfig] = await Promise.all([
     prisma.staffProfile.findMany({
       where: { active: true },
       include: {
@@ -40,6 +41,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     }),
     prisma.station.findMany({ where: { active: true } }),
     prisma.headcountRule.findMany(),
+    prisma.plannerConfig.findUnique({ where: { id: 1 } }),
   ]);
 
   // Build StaffMember objects
@@ -92,7 +94,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     schedule.endDate,
     staffList,
     rules,
-    stations.map((s) => ({ id: s.id, name: s.name }))
+    stations.map((s) => ({ id: s.id, name: s.name })),
+    plannerConfig ?? DEFAULT_PLANNER_CONFIG
   );
 
   // Wipe existing slots and re-create

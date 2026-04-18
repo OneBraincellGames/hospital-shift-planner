@@ -17,6 +17,7 @@ export function Nav({ role, locale }: { role: string; locale: Locale }) {
     { href: "/leave", label: t.nav.leave },
     { href: "/staff", label: t.nav.staff },
     { href: "/stations", label: t.nav.stations },
+    { href: "/planner-config", label: t.nav.plannerConfig },
   ];
 
   const staffLinks = [

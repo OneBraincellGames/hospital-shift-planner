@@ -217,6 +217,26 @@ model ShiftAssignment {
   @@unique([shiftSlotId, staffProfileId])
 }
 
+// Singleton config for the automatic schedule generator (id always = 1)
+model PlannerConfig {
+  id                 Int @id @default(1)
+
+  // Constraint parameters
+  minRestHours       Int @default(11)
+  maxConsecutiveDays Int @default(6)
+
+  // Shift windows stored as hour-of-day (0–23).
+  // If shiftEnd < shiftStart the shift crosses midnight (e.g. NIGHT 22→6).
+  earlyShiftStart    Int @default(6)
+  earlyShiftEnd      Int @default(14)
+  lateShiftStart     Int @default(14)
+  lateShiftEnd       Int @default(22)
+  nightShiftStart    Int @default(22)
+  nightShiftEnd      Int @default(6)
+  dayShiftStart      Int @default(8)
+  dayShiftEnd        Int @default(20)
+}
+
 model SwapRequest {
   id             String       @id @default(cuid())
   shiftSlotId    String
