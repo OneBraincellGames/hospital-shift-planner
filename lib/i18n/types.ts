@@ -120,6 +120,8 @@ export type Translations = {
     maxConsecutiveDaysHint: string;
     shiftTimesTitle: string;
     shiftTimesHint: string;
+    weekdayShifts: string;
+    weekendShifts: string;
     startLabel: string;
     endLabel: string;
     durationLabel: string;

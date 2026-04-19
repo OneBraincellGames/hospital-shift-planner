@@ -32,6 +32,8 @@ export async function PATCH(req: Request) {
     "nightShiftEnd",
     "dayShiftStart",
     "dayShiftEnd",
+    "weekendNightShiftStart",
+    "weekendNightShiftEnd",
   ] as const;
 
   const data: Record<string, number> = {};

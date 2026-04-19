@@ -122,6 +122,8 @@ export const de: Translations = {
     maxConsecutiveDaysHint: "Maximale Anzahl aufeinanderfolgender Arbeitstage, bevor ein freier Tag eingeplant wird.",
     shiftTimesTitle: "Schichtzeiten",
     shiftTimesHint: "Beginn und Ende jeder Schicht in Stunden (0–23). Endet eine Schicht vor dem Beginn, gilt sie als Nachtschicht (Mitternachtsübergang).",
+    weekdayShifts: "Wochentag (Mo – Fr)",
+    weekendShifts: "Wochenende (Sa – So)",
     startLabel: "Beginn",
     endLabel: "Ende",
     durationLabel: "Dauer",

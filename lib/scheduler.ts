@@ -3,14 +3,18 @@ import { DayOfWeek, ShiftType } from "@prisma/client";
 export type PlannerConfigValues = {
   minRestHours: number;
   maxConsecutiveDays: number;
+  // Weekday shift windows
   earlyShiftStart: number;
   earlyShiftEnd: number;
   lateShiftStart: number;
   lateShiftEnd: number;
   nightShiftStart: number;
   nightShiftEnd: number;
+  // Weekend shift windows
   dayShiftStart: number;
   dayShiftEnd: number;
+  weekendNightShiftStart: number;
+  weekendNightShiftEnd: number;
 };
 
 export const DEFAULT_PLANNER_CONFIG: PlannerConfigValues = {
@@ -24,6 +28,8 @@ export const DEFAULT_PLANNER_CONFIG: PlannerConfigValues = {
   nightShiftEnd: 6,
   dayShiftStart: 8,
   dayShiftEnd: 20,
+  weekendNightShiftStart: 22,
+  weekendNightShiftEnd: 6,
 };
 
 const WEEKDAY_SHIFTS: ShiftType[] = [ShiftType.EARLY, ShiftType.LATE, ShiftType.NIGHT];
@@ -96,7 +102,8 @@ function resolveWindow(start: number, end: number): { start: number; end: number
 
 function getShiftWindow(
   shiftType: ShiftType,
-  cfg: PlannerConfigValues
+  cfg: PlannerConfigValues,
+  weekend = false
 ): { start: number; end: number } {
   switch (shiftType) {
     case ShiftType.EARLY:
@@ -104,7 +111,9 @@ function getShiftWindow(
     case ShiftType.LATE:
       return resolveWindow(cfg.lateShiftStart, cfg.lateShiftEnd);
     case ShiftType.NIGHT:
-      return resolveWindow(cfg.nightShiftStart, cfg.nightShiftEnd);
+      return weekend
+        ? resolveWindow(cfg.weekendNightShiftStart, cfg.weekendNightShiftEnd)
+        : resolveWindow(cfg.nightShiftStart, cfg.nightShiftEnd);
     case ShiftType.DAY:
       return resolveWindow(cfg.dayShiftStart, cfg.dayShiftEnd);
   }
@@ -114,30 +123,33 @@ function getShiftWindow(
 function shiftEndAbsolute(
   dayIndex: number,
   shiftType: ShiftType,
-  cfg: PlannerConfigValues
+  cfg: PlannerConfigValues,
+  weekend = false
 ): number {
-  return dayIndex * 24 + getShiftWindow(shiftType, cfg).end;
+  return dayIndex * 24 + getShiftWindow(shiftType, cfg, weekend).end;
 }
 
 function shiftStartAbsolute(
   dayIndex: number,
   shiftType: ShiftType,
-  cfg: PlannerConfigValues
+  cfg: PlannerConfigValues,
+  weekend = false
 ): number {
-  return dayIndex * 24 + getShiftWindow(shiftType, cfg).start;
+  return dayIndex * 24 + getShiftWindow(shiftType, cfg, weekend).start;
 }
 
 function hasRestViolation(
   staffId: string,
   dayIndex: number,
   shiftType: ShiftType,
-  lastShift: Map<string, { dayIndex: number; shiftType: ShiftType }>,
+  weekend: boolean,
+  lastShift: Map<string, { dayIndex: number; shiftType: ShiftType; weekend: boolean }>,
   cfg: PlannerConfigValues
 ): boolean {
   const last = lastShift.get(staffId);
   if (!last) return false;
-  const lastEnd = shiftEndAbsolute(last.dayIndex, last.shiftType, cfg);
-  const nextStart = shiftStartAbsolute(dayIndex, shiftType, cfg);
+  const lastEnd = shiftEndAbsolute(last.dayIndex, last.shiftType, cfg, last.weekend);
+  const nextStart = shiftStartAbsolute(dayIndex, shiftType, cfg, weekend);
   return nextStart - lastEnd < cfg.minRestHours;
 }
 
@@ -177,7 +189,7 @@ export function generateSchedule(
   const assignments: SlotAssignment[] = [];
   const conflicts: Conflict[] = [];
   const hoursPerStaff: Record<string, number> = {};
-  const lastShift = new Map<string, { dayIndex: number; shiftType: ShiftType }>();
+  const lastShift = new Map<string, { dayIndex: number; shiftType: ShiftType; weekend: boolean }>();
   const workedDays = new Map<string, number[]>();
 
   for (const s of staffList) {
@@ -212,18 +224,18 @@ export function generateSchedule(
             (s) =>
               s.stationIds.includes(station.id) &&
               isStaffAvailable(s, dateStr, shiftType) &&
-              !hasRestViolation(s.id, dayIndex, shiftType, lastShift, config) &&
+              !hasRestViolation(s.id, dayIndex, shiftType, weekend, lastShift, config) &&
               !hasConsecutiveViolation(s.id, dayIndex, workedDays, config)
           )
           .sort((a, b) => (hoursPerStaff[a.id] ?? 0) - (hoursPerStaff[b.id] ?? 0));
 
         const chosen = eligible.slice(0, required);
-        const window = getShiftWindow(shiftType, config);
+        const window = getShiftWindow(shiftType, config, weekend);
         const shiftDuration = window.end - window.start;
 
         for (const s of chosen) {
           hoursPerStaff[s.id] = (hoursPerStaff[s.id] ?? 0) + shiftDuration;
-          lastShift.set(s.id, { dayIndex, shiftType });
+          lastShift.set(s.id, { dayIndex, shiftType, weekend });
           const days = workedDays.get(s.id) ?? [];
           if (!days.includes(dayIndex)) days.push(dayIndex);
           workedDays.set(s.id, days);

@@ -122,6 +122,8 @@ export const en: Translations = {
     maxConsecutiveDaysHint: "Maximum number of consecutive working days before a day off is required.",
     shiftTimesTitle: "Shift times",
     shiftTimesHint: "Start and end of each shift in hours (0–23). If end < start, the shift crosses midnight.",
+    weekdayShifts: "Weekday (Mon – Fri)",
+    weekendShifts: "Weekend (Sat – Sun)",
     startLabel: "Start",
     endLabel: "End",
     durationLabel: "Duration",
