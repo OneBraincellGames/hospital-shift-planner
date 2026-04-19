@@ -55,8 +55,10 @@ export function getHolidaysRLP(year: number): Holiday[] {
     { date: fmt(addDays(easter, 60)),    name: "Fronleichnam"              },
     { date: `${year}-10-03`,             name: "Tag der Deutschen Einheit" },
     { date: `${year}-11-01`,             name: "Allerheiligen"             },
+    { date: `${year}-12-24`,             name: "Heiligabend"               },
     { date: `${year}-12-25`,             name: "1. Weihnachtstag"          },
     { date: `${year}-12-26`,             name: "2. Weihnachtstag"          },
+    { date: `${year}-12-31`,             name: "Silvester"                 },
   ];
 
   return holidays.sort((a, b) => a.date.localeCompare(b.date));
