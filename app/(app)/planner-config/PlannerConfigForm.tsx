@@ -32,7 +32,7 @@ function NumInput({
       max={max}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
   );
 }
@@ -175,7 +175,7 @@ export function PlannerConfigForm({ initialConfig }: Props) {
                 max={24}
                 value={values.minRestHours}
                 onChange={(e) => setPositive("minRestHours", e.target.value)}
-                className="w-24 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-24 border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-500">{t.plannerConfig.hours}</span>
             </div>
@@ -193,7 +193,7 @@ export function PlannerConfigForm({ initialConfig }: Props) {
                 max={14}
                 value={values.maxConsecutiveDays}
                 onChange={(e) => setPositive("maxConsecutiveDays", e.target.value)}
-                className="w-24 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-24 border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-sm text-gray-500">{t.plannerConfig.days}</span>
             </div>
