@@ -36,7 +36,7 @@ export async function PATCH(req: Request) {
     "weekendNightShiftEnd",
   ] as const;
 
-  const data: Record<string, number> = {};
+  const data: Record<string, number | boolean> = {};
   for (const field of intFields) {
     const val = body[field];
     if (val !== undefined) {
@@ -44,6 +44,9 @@ export async function PATCH(req: Request) {
       if (isNaN(n)) return NextResponse.json({ error: `Invalid value for ${field}` }, { status: 400 });
       data[field] = n;
     }
+  }
+  if (body.observePublicHolidays !== undefined) {
+    data.observePublicHolidays = Boolean(body.observePublicHolidays);
   }
 
   const config = await prisma.plannerConfig.upsert({

@@ -7,6 +7,7 @@ import {
   HeadcountRule,
   DEFAULT_PLANNER_CONFIG,
 } from "@/lib/scheduler";
+import { getHolidaySet } from "@/lib/holidays";
 import { ShiftType } from "@prisma/client";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -89,13 +90,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }));
 
   // Run the algorithm
+  const cfg = plannerConfig ?? DEFAULT_PLANNER_CONFIG;
+  const holidays = cfg.observePublicHolidays
+    ? getHolidaySet(schedule.startDate, schedule.endDate)
+    : new Set<string>();
+
   const result = generateSchedule(
     schedule.startDate,
     schedule.endDate,
     staffList,
     rules,
     stations.map((s) => ({ id: s.id, name: s.name })),
-    plannerConfig ?? DEFAULT_PLANNER_CONFIG
+    cfg,
+    holidays
   );
 
   // Wipe existing slots and re-create

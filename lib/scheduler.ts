@@ -10,11 +10,13 @@ export type PlannerConfigValues = {
   lateShiftEnd: number;
   nightShiftStart: number;
   nightShiftEnd: number;
-  // Weekend shift windows
+  // Weekend / holiday shift windows
   dayShiftStart: number;
   dayShiftEnd: number;
   weekendNightShiftStart: number;
   weekendNightShiftEnd: number;
+  // Holiday handling
+  observePublicHolidays: boolean;
 };
 
 export const DEFAULT_PLANNER_CONFIG: PlannerConfigValues = {
@@ -30,6 +32,7 @@ export const DEFAULT_PLANNER_CONFIG: PlannerConfigValues = {
   dayShiftEnd: 20,
   weekendNightShiftStart: 22,
   weekendNightShiftEnd: 6,
+  observePublicHolidays: true,
 };
 
 const WEEKDAY_SHIFTS: ShiftType[] = [ShiftType.EARLY, ShiftType.LATE, ShiftType.NIGHT];
@@ -184,7 +187,8 @@ export function generateSchedule(
   staffList: StaffMember[],
   headcountRules: HeadcountRule[],
   stations: { id: string; name: string }[],
-  config: PlannerConfigValues = DEFAULT_PLANNER_CONFIG
+  config: PlannerConfigValues = DEFAULT_PLANNER_CONFIG,
+  holidays: Set<string> = new Set()
 ): ScheduleResult {
   const assignments: SlotAssignment[] = [];
   const conflicts: Conflict[] = [];
@@ -204,7 +208,9 @@ export function generateSchedule(
 
   while (current <= endDate) {
     const dateStr = dateKey(current);
-    const weekend = isWeekend(current);
+    const weekend =
+      isWeekend(current) ||
+      (config.observePublicHolidays && holidays.has(dateStr));
     const dayOfWeek = DOW_MAP[current.getUTCDay()];
     const shifts = weekend ? WEEKEND_SHIFTS : WEEKDAY_SHIFTS;
 

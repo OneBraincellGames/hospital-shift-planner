@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import type { PlannerConfigValues } from "@/lib/scheduler";
+import { getHolidaysRLP } from "@/lib/holidays";
 
 type Props = {
   initialConfig: PlannerConfigValues & { id: number };
@@ -37,22 +38,29 @@ function NumInput({
   );
 }
 
+function formatDate(iso: string): string {
+  // "2026-04-03" → "03.04.2026"
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export function PlannerConfigForm({ initialConfig }: Props) {
   const t = useT();
 
   const [values, setValues] = useState<PlannerConfigValues>({
-    minRestHours: initialConfig.minRestHours,
-    maxConsecutiveDays: initialConfig.maxConsecutiveDays,
-    earlyShiftStart: initialConfig.earlyShiftStart,
-    earlyShiftEnd: initialConfig.earlyShiftEnd,
-    lateShiftStart: initialConfig.lateShiftStart,
-    lateShiftEnd: initialConfig.lateShiftEnd,
-    nightShiftStart: initialConfig.nightShiftStart,
-    nightShiftEnd: initialConfig.nightShiftEnd,
-    dayShiftStart: initialConfig.dayShiftStart,
-    dayShiftEnd: initialConfig.dayShiftEnd,
+    minRestHours:          initialConfig.minRestHours,
+    maxConsecutiveDays:    initialConfig.maxConsecutiveDays,
+    earlyShiftStart:       initialConfig.earlyShiftStart,
+    earlyShiftEnd:         initialConfig.earlyShiftEnd,
+    lateShiftStart:        initialConfig.lateShiftStart,
+    lateShiftEnd:          initialConfig.lateShiftEnd,
+    nightShiftStart:       initialConfig.nightShiftStart,
+    nightShiftEnd:         initialConfig.nightShiftEnd,
+    dayShiftStart:         initialConfig.dayShiftStart,
+    dayShiftEnd:           initialConfig.dayShiftEnd,
     weekendNightShiftStart: initialConfig.weekendNightShiftStart,
-    weekendNightShiftEnd: initialConfig.weekendNightShiftEnd,
+    weekendNightShiftEnd:  initialConfig.weekendNightShiftEnd,
+    observePublicHolidays: initialConfig.observePublicHolidays,
   });
 
   const [saving, setSaving] = useState(false);
@@ -68,6 +76,11 @@ export function PlannerConfigForm({ initialConfig }: Props) {
   function setPositive(field: FieldKey, raw: string) {
     const n = parseInt(raw, 10);
     setValues((v) => ({ ...v, [field]: isNaN(n) ? 1 : Math.max(1, n) }));
+    setSaved(false);
+  }
+
+  function toggleBool(field: FieldKey) {
+    setValues((v) => ({ ...v, [field]: !v[field] }));
     setSaved(false);
   }
 
@@ -111,7 +124,7 @@ export function PlannerConfigForm({ initialConfig }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
-            <th className="pb-2 font-medium w-20">{/* shift name */}</th>
+            <th className="pb-2 font-medium w-20"></th>
             <th className="pb-2 font-medium w-36">{t.plannerConfig.startLabel}</th>
             <th className="pb-2 font-medium w-36">{t.plannerConfig.endLabel}</th>
             <th className="pb-2 font-medium">{t.plannerConfig.durationLabel}</th>
@@ -119,9 +132,9 @@ export function PlannerConfigForm({ initialConfig }: Props) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {rows.map(({ label, startField, endField }) => {
-            const start = values[startField];
-            const end = values[endField];
-            const dur = shiftDuration(start, end);
+            const start = values[startField] as number;
+            const end   = values[endField]   as number;
+            const dur     = shiftDuration(start, end);
             const crosses = end < start;
             return (
               <tr key={startField}>
@@ -139,9 +152,7 @@ export function PlannerConfigForm({ initialConfig }: Props) {
                   </div>
                 </td>
                 <td className="py-2">
-                  <span className="text-gray-700 font-medium">
-                    {dur} {t.plannerConfig.hours}
-                  </span>
+                  <span className="text-gray-700 font-medium">{dur} {t.plannerConfig.hours}</span>
                   {crosses && (
                     <span className="ml-2 text-xs text-amber-600">
                       ({t.plannerConfig.crossesMidnight})
@@ -155,6 +166,10 @@ export function PlannerConfigForm({ initialConfig }: Props) {
       </table>
     );
   }
+
+  // Holiday list for current + next year
+  const thisYear = new Date().getFullYear();
+  const holidayYears = [thisYear, thisYear + 1];
 
   return (
     <div className="space-y-8">
@@ -210,7 +225,6 @@ export function PlannerConfigForm({ initialConfig }: Props) {
         <p className="text-xs text-gray-400 mb-6">{t.plannerConfig.shiftTimesHint}</p>
 
         <div className="space-y-6">
-          {/* Weekday */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               {t.plannerConfig.weekdayShifts}
@@ -222,7 +236,6 @@ export function PlannerConfigForm({ initialConfig }: Props) {
 
           <div className="border-t border-gray-100" />
 
-          {/* Weekend */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
               {t.plannerConfig.weekendShifts}
@@ -231,6 +244,61 @@ export function PlannerConfigForm({ initialConfig }: Props) {
               <ShiftTable rows={weekendRows} />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Public holidays ──────────────────────────────────────────────── */}
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">
+          {t.plannerConfig.holidaysTitle}
+        </h2>
+        <p className="text-xs text-gray-400 mb-5">{t.plannerConfig.holidaysSubtitle}</p>
+
+        {/* Toggle */}
+        <label className="flex items-start gap-3 cursor-pointer mb-6">
+          <div className="relative mt-0.5">
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={values.observePublicHolidays}
+              onChange={() => toggleBool("observePublicHolidays")}
+            />
+            <div
+              className={`w-10 h-6 rounded-full transition-colors ${
+                values.observePublicHolidays ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            />
+            <div
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                values.observePublicHolidays ? "translate-x-4" : ""
+              }`}
+            />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-700">
+              {t.plannerConfig.observeHolidays}
+            </span>
+            <p className="text-xs text-gray-400 mt-0.5">{t.plannerConfig.observeHolidaysHint}</p>
+          </div>
+        </label>
+
+        {/* Holiday list */}
+        <div className="space-y-6">
+          {holidayYears.map((year) => (
+            <div key={year}>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {year}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
+                {getHolidaysRLP(year).map((h) => (
+                  <div key={h.date} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700">{h.name}</span>
+                    <span className="text-gray-400 tabular-nums ml-4">{formatDate(h.date)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -243,8 +311,8 @@ export function PlannerConfigForm({ initialConfig }: Props) {
         >
           {saving ? t.common.saving : t.common.saveChanges}
         </button>
-        {saved && <span className="text-sm text-green-600">{t.plannerConfig.saved}</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {saved  && <span className="text-sm text-green-600">{t.plannerConfig.saved}</span>}
+        {error  && <span className="text-sm text-red-600">{error}</span>}
       </div>
     </div>
   );

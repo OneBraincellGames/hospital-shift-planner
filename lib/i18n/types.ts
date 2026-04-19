@@ -122,6 +122,10 @@ export type Translations = {
     shiftTimesHint: string;
     weekdayShifts: string;
     weekendShifts: string;
+    holidaysTitle: string;
+    holidaysSubtitle: string;
+    observeHolidays: string;
+    observeHolidaysHint: string;
     startLabel: string;
     endLabel: string;
     durationLabel: string;
