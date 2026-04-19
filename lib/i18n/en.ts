@@ -56,6 +56,10 @@ export const en: Translations = {
     primaryLabel: "Primary",
     noStaffYet: "No staff members yet.",
     noStationsYet: "No stations yet — add stations first.",
+    preferencesTitle: "Shift preferences",
+    preferencePreferred: "Preferred",
+    preferenceNeutral: "Neutral",
+    preferenceAvoid: "Avoid",
   },
   stations: {
     title: "Stations",

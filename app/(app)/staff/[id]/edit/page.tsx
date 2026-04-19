@@ -13,7 +13,7 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
     prisma.user.findUnique({
       where: { id },
       include: {
-        staffProfile: { include: { stationAssignments: true } },
+        staffProfile: { include: { stationAssignments: true, shiftPreferences: true } },
       },
     }),
     prisma.station.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
@@ -32,6 +32,9 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
           stationIds: user.staffProfile?.stationAssignments.map((a) => a.stationId) ?? [],
           primaryStationId: user.staffProfile?.stationAssignments.find((a) => a.isPrimary)?.stationId ?? null,
           monthlyHours: user.staffProfile?.monthlyHours ?? 160,
+          preferences: Object.fromEntries(
+            (user.staffProfile?.shiftPreferences ?? []).map((p) => [p.shiftType, p.preferred])
+          ) as Record<string, boolean>,
         }}
       />
     </div>

@@ -103,6 +103,7 @@ model StaffProfile {
   availabilityBlocks AvailabilityBlock[]
   assignments        ShiftAssignment[]
   leaveBlocks        LeaveBlock[]
+  shiftPreferences   ShiftPreference[]
   swapRequestsFrom   SwapRequest[]       @relation("SwapFrom")
   swapRequestsTo     SwapRequest[]       @relation("SwapTo")
 }
@@ -141,6 +142,17 @@ model HeadcountRule {
   required  Int
 
   @@unique([stationId, dayOfWeek, shiftType])
+}
+
+// Soft shift preference: preferred (true) or avoid (false)
+model ShiftPreference {
+  id             String       @id @default(cuid())
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  shiftType      ShiftType
+  preferred      Boolean      // true = wants this shift, false = wants to avoid it
+
+  @@unique([staffProfileId, shiftType])
 }
 
 // Recurring availability rule (e.g. "never nights")

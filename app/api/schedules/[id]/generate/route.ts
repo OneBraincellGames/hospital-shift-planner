@@ -38,6 +38,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
             endDate: { gte: schedule.startDate },
           },
         },
+        shiftPreferences: true,
       },
     }),
     prisma.station.findMany({ where: { active: true } }),
@@ -72,6 +73,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       );
     }
 
+    const preferredShifts = new Set<ShiftType>(
+      p.shiftPreferences.filter((pr) => pr.preferred).map((pr) => pr.shiftType as ShiftType)
+    );
+    const avoidedShifts = new Set<ShiftType>(
+      p.shiftPreferences.filter((pr) => !pr.preferred).map((pr) => pr.shiftType as ShiftType)
+    );
+
     return {
       id: p.id,
       userId: p.userId,
@@ -79,6 +87,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       stationIds: p.stationAssignments.map((a) => a.stationId),
       availableShiftTypes: availableShifts,
       blockedDates,
+      preferredShifts,
+      avoidedShifts,
     };
   });
 

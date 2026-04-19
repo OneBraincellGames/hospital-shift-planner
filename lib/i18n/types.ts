@@ -54,6 +54,10 @@ export type Translations = {
     primaryLabel: string;
     noStaffYet: string;
     noStationsYet: string;
+    preferencesTitle: string;
+    preferencePreferred: string;
+    preferenceNeutral: string;
+    preferenceAvoid: string;
   };
   stations: {
     title: string;

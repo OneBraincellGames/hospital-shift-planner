@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { ShiftType } from "@prisma/client";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -8,7 +9,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const body = await req.json();
-  const { name, email, active, monthlyHours, stationIds, primaryStationId } = body;
+  const { name, email, active, monthlyHours, stationIds, primaryStationId, preferences } = body;
 
   const user = await prisma.user.update({
     where: { id },
@@ -37,6 +38,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           isPrimary: sid === primaryStationId,
         })),
       });
+    }
+  }
+
+  // Upsert shift preferences: Record<ShiftType, true | false | null>
+  if (preferences !== undefined) {
+    const profile = await prisma.staffProfile.findUnique({ where: { userId: id } });
+    if (profile) {
+      await prisma.shiftPreference.deleteMany({ where: { staffProfileId: profile.id } });
+      const rows = (Object.entries(preferences) as [string, boolean | null][])
+        .filter(([, val]) => val !== null)
+        .map(([shiftType, preferred]) => ({
+          staffProfileId: profile.id,
+          shiftType: shiftType as ShiftType,
+          preferred: preferred as boolean,
+        }));
+      if (rows.length > 0) {
+        await prisma.shiftPreference.createMany({ data: rows });
+      }
     }
   }
 

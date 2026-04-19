@@ -53,8 +53,10 @@ export type StaffMember = {
   userId: string;
   name: string;
   stationIds: string[];
-  availableShiftTypes: Set<ShiftType>; // recurring rules
-  blockedDates: Map<string, boolean>; // ISO date string → available
+  availableShiftTypes: Set<ShiftType>; // recurring hard rules
+  blockedDates: Map<string, boolean>;  // ISO date string → available
+  preferredShifts: Set<ShiftType>;     // soft: assign first
+  avoidedShifts: Set<ShiftType>;       // soft: assign last (fallback only)
 };
 
 export type HeadcountRule = {
@@ -233,7 +235,15 @@ export function generateSchedule(
               !hasRestViolation(s.id, dayIndex, shiftType, weekend, lastShift, config) &&
               !hasConsecutiveViolation(s.id, dayIndex, workedDays, config)
           )
-          .sort((a, b) => (hoursPerStaff[a.id] ?? 0) - (hoursPerStaff[b.id] ?? 0));
+          .sort((a, b) => {
+            // Primary: preferred (0) → neutral (1) → avoided (2)
+            const tier = (s: StaffMember) =>
+              s.preferredShifts.has(shiftType) ? 0 : s.avoidedShifts.has(shiftType) ? 2 : 1;
+            const td = tier(a) - tier(b);
+            if (td !== 0) return td;
+            // Secondary: fewest hours worked (load balancing)
+            return (hoursPerStaff[a.id] ?? 0) - (hoursPerStaff[b.id] ?? 0);
+          });
 
         const chosen = eligible.slice(0, required);
         const window = getShiftWindow(shiftType, config, weekend);
